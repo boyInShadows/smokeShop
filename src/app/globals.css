@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Vaporwave Dusk design tokens ─────────────────────────────
+   Neon (primary/secondary) is reserved for CTAs, glows and hover
+   states only — never body text. */
+@theme {
+  --color-bg: #12101a;
+  --color-surface: #1c1830;
+  --color-surface-2: #241e3a;
+  --color-border: #2a2442;
+
+  --color-primary: #ff3d9a; /* electric magenta — primary CTA */
+  --color-primary-strong: #e62e88;
+  --color-secondary: #22d3ee; /* electric cyan — secondary accent */
+
+  --color-text: #f3eeff;
+  --color-muted: #9c93b8;
+
+  --font-sans: "Vazirmatn Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    /* Persian typography: airy leading, modern glyph forms, no tracking. */
+    line-height: 1.85;
+    font-feature-settings: "ss01";
+    letter-spacing: normal;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-primary);
+    color: var(--color-bg);
+  }
+
+  /* Slim, on-brand scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-surface-2) transparent;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* Soft neon glow for CTAs / focal elements */
+  .glow-primary {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 40%, transparent),
+      0 8px 40px -8px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  }
+  .glow-secondary {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-secondary) 35%, transparent),
+      0 8px 40px -10px color-mix(in srgb, var(--color-secondary) 50%, transparent);
+  }
+
+  /* Ambient CSS "smoke" — blurred vaporwave gradient blobs (v1, no WebGL yet) */
+  .smoke-bg {
+    position: relative;
+    isolation: isolate;
+  }
+  .smoke-bg::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10% auto -10%;
+    height: 70%;
+    z-index: -1;
+    background:
+      radial-gradient(40% 55% at 25% 30%, color-mix(in srgb, var(--color-primary) 30%, transparent), transparent 70%),
+      radial-gradient(45% 50% at 78% 20%, color-mix(in srgb, var(--color-secondary) 26%, transparent), transparent 70%);
+    filter: blur(60px);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  /* Hide scrollbar on horizontal rails while keeping scroll */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Marquee for the compliance ticker */
+  @keyframes ticker-slide {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  .animate-ticker {
+    animation: ticker-slide 30s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-ticker {
+    animation: none;
+  }
 }
