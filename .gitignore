@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# docs — only README.md ships; every other .md stays local
+*.md
+!README.md

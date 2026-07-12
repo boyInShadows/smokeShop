@@ -1,7 +1,7 @@
 import AgeGate from "@/components/AgeGate";
 import ComplianceTicker from "@/components/ComplianceTicker";
 import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
+import HeroScrollStage from "@/components/hero/HeroScrollStage";
 import TrustRow from "@/components/TrustRow";
 import BrandsGrid from "@/components/BrandsGrid";
 import BestsellersRail from "@/components/BestsellersRail";
@@ -16,7 +16,7 @@ export default function Home() {
       <ComplianceTicker />
       <Navbar />
       <main className="flex-1">
-        <Hero />
+        <HeroScrollStage />
         <TrustRow />
         <BrandsGrid />
         <BestsellersRail />
