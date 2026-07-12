@@ -25,6 +25,10 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+    /* `clip`, never `hidden`. `overflow-x: hidden` turns the root into a scroll
+       container, which silently breaks every `position: sticky` below it — and
+       the hero is a sticky stage. */
+    overflow-x: clip;
   }
 
   body {

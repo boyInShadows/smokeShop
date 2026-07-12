@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 // (font files served from node_modules, no build-time/runtime request to Google).
 import "@fontsource-variable/vazirmatn";
 import "./globals.css";
+import SmoothScroll from "@/components/SmoothScroll";
 
 export const metadata: Metadata = {
   title: "ویپ اسموک | فروشگاه تخصصی ویپ و پاد",
@@ -25,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-bg text-text font-sans">
-        {children}
+        <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>
   );

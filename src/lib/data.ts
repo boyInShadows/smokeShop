@@ -20,6 +20,50 @@ export const TICKER_ITEMS: string[] = [
   "پشتیبانی و ارسال به سراسر ایران",
 ];
 
+/**
+ * Hero flavour beats — "The Exhale".
+ *
+ * The smoke plate (`/hero/smoke.webp`) is neutral greyscale on pure black, so
+ * multiplying a gradient onto it paints the smoke *that* colour. Scrolling the
+ * hero cross-fades between these, so the smoke reads as the flavour. `from` is
+ * the deep base of the plume, `to` is the bright neon crown.
+ *
+ * Two of the three are the brand tokens on purpose (cyan = secondary,
+ * magenta = primary); amber is the warm outlier that keeps it from being a
+ * two-colour site.
+ */
+export type HeroFlavor = {
+  name: string;
+  note: string;
+  from: string; // deep base of the plume
+  to: string; // bright crown
+  href: string;
+};
+
+export const HERO_FLAVORS: HeroFlavor[] = [
+  {
+    name: "یخ و نعناع",
+    note: "خنکای نفس‌گیر",
+    from: "#0e4a5a",
+    to: "#22d3ee",
+    href: "#bestsellers",
+  },
+  {
+    name: "توت‌فرنگی و بری",
+    note: "شیرینی پررنگ",
+    from: "#4a0e2a",
+    to: "#ff3d9a",
+    href: "#bestsellers",
+  },
+  {
+    name: "انبه و هلو",
+    note: "گرمای استوایی",
+    from: "#4a2a08",
+    to: "#ffa53d",
+    href: "#bestsellers",
+  },
+];
+
 export type Brand = {
   name: string; // Latin brand name (wrap in <bdi> when rendered)
   tagline: string;
