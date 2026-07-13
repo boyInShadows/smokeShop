@@ -109,21 +109,36 @@ export default function HeroScrollStage() {
   const deviceY = useTransform(scrollYProgress, [0, 1], ["0%", "-4%"]);
   const deviceScale = useTransform(scrollYProgress, [0, 1], [1, 1.05]);
 
-  // Bloom reacts to scroll SPEED and decays back to nothing at rest. Effects
-  // that never rest read cheap; effects that fire and decay read premium.
+  // Velocity flare: scroll fast and the PLUME brightens, stop and it settles.
+  // Effects that never rest read cheap; effects that fire and decay read premium.
   // Clamped hard — unclamped velocity is a motion-sickness generator.
+  //
+  // ⚠️ This used to be a `radial-gradient(closest-side, …)` on a full-screen div.
+  // `closest-side` on a full-screen box is *by definition* a circle centred in the
+  // viewport, so at speed a white disc appeared over the middle of the hero. It
+  // read as a lens artifact rather than as smoke, because its shape had nothing to
+  // do with the smoke — a hard geometric circle floating over an organic plume.
+  // The flare is now the PLATE ITSELF, screen-blended: the flare is shaped like the
+  // plume, moves with it, and brightens it. Which is what an exhale actually does.
   const velocity = useVelocity(scrollYProgress);
-  const bloomRaw = useTransform(velocity, (v: number) =>
-    Math.min(Math.abs(v) * 0.4, 0.55)
+  // Capped at 0.24, not higher: the flare is a second copy of the plate, so it
+  // thickens the smoke as well as brightening it. Past ~0.3 the denser plume
+  // starts eating the contrast of the flavour headline sitting on top of it,
+  // exactly when the panel is mid-handover and already semi-transparent.
+  const flareRaw = useTransform(velocity, (v: number) =>
+    Math.min(Math.abs(v) * 0.25, 0.24)
   );
   // Spring here is deliberate and safe: it smooths ONE derived value that drives
   // a GPU property. It is not on scrollYProgress, so nothing else loses its
   // compositor path.
-  const bloom = useSpring(bloomRaw, {
+  const flare = useSpring(flareRaw, {
     stiffness: 120,
     damping: 30,
     mass: 0.3,
   });
+  // Sits a touch wider than the plume it is lifting, so it reads as a bloom
+  // around the smoke rather than a second copy of it sitting exactly on top.
+  const flareScale = useTransform(scrollYProgress, [0, 1], [1.04, 1.13]);
 
   // Same rule as the flavour ranges: anchor the far end, or it climbs back up.
   // The intro copy clears out just before the first flavour panel arrives (its
@@ -178,12 +193,22 @@ export default function HeroScrollStage() {
             />
           ))}
 
-          {/* Velocity bloom — scroll fast and the plume flares, stop and it settles. */}
-          <m.div
-            aria-hidden
-            style={reduce ? { opacity: 0 } : { opacity: bloom }}
-            className="pointer-events-none absolute inset-0 z-[6] mix-blend-screen bg-[radial-gradient(closest-side,rgba(255,255,255,0.55),rgba(255,255,255,0.12)_45%,transparent_72%)]"
-          />
+          {/* Velocity flare — the plume itself brightens on fast scroll, then settles.
+              Untinted: the raw greyscale plate, screen-blended, so it lifts whatever
+              colour the smoke currently is instead of washing it toward white. Not
+              rendered at all under reduced motion — one less full-screen blend. */}
+          {!reduce && (
+            <m.div
+              aria-hidden
+              style={{
+                opacity: flare,
+                y: smokeY,
+                scale: flareScale,
+                backgroundImage: "var(--hero-smoke)",
+              }}
+              className="pointer-events-none absolute -inset-[8%] z-[6] bg-cover bg-center mix-blend-screen will-change-transform"
+            />
+          )}
 
           {/* ── Product: above the blend group, no blend mode. Immune. ──
                  On mobile the device takes the top half and the panels take the
