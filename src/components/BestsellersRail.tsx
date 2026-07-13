@@ -59,13 +59,19 @@ export default function BestsellersRail() {
             <m.div
               key={product.name}
               className="w-56 shrink-0 snap-start sm:w-64"
-              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 30 }}
+              // `initial` is unconditional on purpose — it is what Motion writes
+              // into the SERVER's HTML, and `reduce` is false there but true on
+              // the client's first render. Branching it hydrates against markup
+              // that disagrees. Reduced motion lives in `transition` instead,
+              // which never reaches the HTML. Same contract as motion/Reveal.tsx.
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{
                 duration: reduce ? 0.3 : 0.55,
                 delay: reduce ? 0 : i * 0.07,
                 ease: [0.16, 1, 0.3, 1],
+                ...(reduce && { y: { duration: 0 } }), // snap, don't travel
               }}
             >
               <ProductCard product={product} />

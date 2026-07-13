@@ -18,6 +18,20 @@ import { m, useReducedMotion } from "motion/react";
  * spaces keeps every word an intact shaping run, so the letters stay joined.
  * (Latin has no such constraint, but mixing two strategies in one RTL document
  * is not worth the complexity.)
+ *
+ * ⚠️ THE MARKUP IS THE SAME IN BOTH PATHS. This used to early-return a single
+ * plain `<span>` under `prefers-reduced-motion`, which meant the component
+ * rendered a completely different DOM depending on a media query — and a media
+ * query does not exist on the server, so `useReducedMotion()` was `false` during
+ * SSR and `true` on the client's first render. The two trees disagreed and
+ * hydration threw. Deferring the value past mount would not have helped either:
+ * Motion consumes `initial` once, at mount, so the words would still have flown
+ * in for someone who asked for no motion.
+ *
+ * So: always render the words, and express reduced motion in `transition` only —
+ * it is re-read every render and never reaches the HTML. Under reduce the whole
+ * line fades as one (no stagger, no spring) and the lift/tilt snap to their end
+ * values in zero time, while the word is still invisible at `opacity: 0`.
  */
 export default function SplitText({
   text,
@@ -35,21 +49,14 @@ export default function SplitText({
   const reduce = useReducedMotion();
   const words = text.split(" ");
 
-  // Reduced motion: one plain fade for the whole line. No per-word choreography.
-  if (reduce) {
-    return (
-      <Tag className={className}>
-        <m.span
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, amount: 0.4 }}
-          transition={{ duration: 0.3 }}
-        >
-          {text}
-        </m.span>
-      </Tag>
-    );
-  }
+  // One fade for the whole line: every word shares the same timing (no stagger),
+  // and the lift/tilt are snapped rather than animated.
+  const SNAP = { duration: 0 };
+  const still = {
+    opacity: { duration: 0.3 },
+    y: SNAP,
+    rotate: SNAP,
+  };
 
   return (
     <Tag className={className}>
@@ -64,12 +71,16 @@ export default function SplitText({
           initial={{ opacity: 0, y: "0.5em", rotate: -4 }}
           whileInView={{ opacity: 1, y: 0, rotate: 0 }}
           viewport={{ once: true, amount: 0.4 }}
-          transition={{
-            type: "spring",
-            stiffness: 380,
-            damping: 18, // under-damped on purpose: it overshoots, then settles
-            delay: delay + i * stagger,
-          }}
+          transition={
+            reduce
+              ? still
+              : {
+                  type: "spring",
+                  stiffness: 380,
+                  damping: 18, // under-damped on purpose: overshoots, then settles
+                  delay: delay + i * stagger,
+                }
+          }
         >
           {word}
         </m.span>

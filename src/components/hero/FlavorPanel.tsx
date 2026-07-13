@@ -12,6 +12,11 @@ import { ChevronIcon } from "../icons";
  * Motion is *scrubbed*, not triggered: every value is a pure function of scroll
  * position, so scrolling back up plays it in reverse. Only `opacity` and
  * `transform` are animated — both compositor-thread.
+ *
+ * This component assumes motion is ON: `HeroScrollStage` does not mount it under
+ * `prefers-reduced-motion` (with nothing to scrub, all three panels would sit at
+ * full opacity on top of the intro copy). So there is no reduced-motion branch
+ * to carry here.
  */
 
 // Each row enters slightly after the one above it. Keep this small: with 5 rows
@@ -50,14 +55,9 @@ function useRow(
 export default function FlavorPanel({
   flavor,
   progress,
-  reduce,
-  active,
 }: {
   flavor: HeroFlavor;
   progress: MotionValue<number>;
-  reduce: boolean;
-  /** Shown statically under reduced motion (the first flavour only). */
-  active: boolean;
 }) {
   // Five rows, fixed order — these are hooks, so the count must never vary.
   const eyebrow = useRow(progress, flavor.window, 0);
@@ -66,14 +66,12 @@ export default function FlavorPanel({
   const specs = useRow(progress, flavor.window, ROW_STAGGER * 3);
   const buy = useRow(progress, flavor.window, ROW_STAGGER * 4);
 
-  const still = (visible: boolean) => ({ opacity: visible ? 1 : 0 });
-
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center">
       <div className="w-full">
         {/* Eyebrow — the only place the flavour's neon touches type. */}
         <m.div
-          style={reduce ? still(active) : eyebrow}
+          style={eyebrow}
           className="flex items-center gap-2"
         >
           <span
@@ -89,21 +87,21 @@ export default function FlavorPanel({
         </m.div>
 
         <m.h2
-          style={reduce ? still(active) : title}
+          style={title}
           className="mt-3 text-4xl font-black leading-[1.2] sm:text-5xl lg:text-6xl"
         >
           {flavor.name}
         </m.h2>
 
         <m.p
-          style={reduce ? still(active) : desc}
+          style={desc}
           className="mt-4 max-w-md text-sm leading-relaxed text-muted sm:text-base"
         >
           {flavor.desc}
         </m.p>
 
         <m.ul
-          style={reduce ? still(active) : specs}
+          style={specs}
           className="mt-5 flex flex-wrap gap-2"
         >
           <li className="rounded-full border border-border bg-surface/60 px-3 py-1.5 text-xs font-semibold text-text backdrop-blur-sm">
@@ -120,7 +118,7 @@ export default function FlavorPanel({
         </m.ul>
 
         <m.div
-          style={reduce ? still(active) : buy}
+          style={buy}
           className="mt-7 flex flex-wrap items-center gap-4"
         >
           <a

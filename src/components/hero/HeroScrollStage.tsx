@@ -8,8 +8,8 @@ import {
   useSpring,
   useTransform,
   useVelocity,
-  useReducedMotion,
 } from "motion/react";
+import { useSafeReducedMotion } from "@/lib/useSafeReducedMotion";
 import { HERO_FLAVORS } from "@/lib/data";
 import HeroCopy from "./HeroCopy";
 import FlavorPanel from "./FlavorPanel";
@@ -47,10 +47,28 @@ import Grain from "./Grain";
  * while it drives transform/opacity/filter/clipPath. Which is also why there is
  * no `useSpring` on scrollYProgress here: springing it "sacrifices GPU
  * optimization for smoothing" (Motion docs). Smoothness comes from Lenis.
+ *
+ * ── Reduced motion: a deliberate static frame, not a frozen animation ────────
+ * The whole hero IS a scroll animation, so with motion off it has to resolve to
+ * one composed frame rather than just stop moving. Freezing it in place was
+ * visibly broken: the intro copy and the first flavour panel were BOTH left at
+ * full opacity, and the panels are `absolute inset-0` over the box the copy sits
+ * in — two headlines stacked on each other. (In the animated path they hand over:
+ * the copy is gone by p=0.06 and the first panel opens at 0.07.)
+ *
+ * So under reduce: the smoke holds the first flavour's colour, the device sits
+ * still, the intro copy stays, and the flavour panels are NOT RENDERED AT ALL.
+ * The flavours are still merchandised further down the page. The pin also drops
+ * from 250vh to one screen — a 250vh pin over a frame that never changes is 2.5
+ * screens of scrolling for nothing.
+ *
+ * `useSafeReducedMotion` (not Motion's raw hook) because these branches feed
+ * `style`/`className`, which are server-rendered: the raw value differs between
+ * server and first client render and would throw a hydration mismatch.
  */
 export default function HeroScrollStage() {
   const ref = useRef<HTMLElement>(null);
-  const reduce = useReducedMotion();
+  const reduce = useSafeReducedMotion();
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -118,7 +136,10 @@ export default function HeroScrollStage() {
       {/* The plate is a CSS background, so next/image can't preload it for us. */}
       <link rel="preload" as="image" href="/hero/smoke.webp" />
 
-      <section ref={ref} className="relative h-[250vh]">
+      <section
+        ref={ref}
+        className={`relative ${reduce ? "h-screen" : "h-[250vh]"}`}
+      >
         <div className="sticky top-0 h-screen w-full isolate overflow-hidden bg-[#08070d]">
           {/* ── Blend group: the smoke, and only the smoke, takes the colour ── */}
           {HERO_FLAVORS.map((flavor, i) => (
@@ -187,15 +208,18 @@ export default function HeroScrollStage() {
                 <HeroCopy />
               </m.div>
 
-              {HERO_FLAVORS.map((flavor, i) => (
-                <FlavorPanel
-                  key={flavor.name}
-                  flavor={flavor}
-                  progress={scrollYProgress}
-                  reduce={Boolean(reduce)}
-                  active={i === 0}
-                />
-              ))}
+              {/* The panels only exist when there is a scroll to scrub them.
+                  Under reduced motion the copy keeps the stage to itself — see
+                  the header note. Not mounting them is safe: their hooks live
+                  inside FlavorPanel, so nothing here changes hook order. */}
+              {!reduce &&
+                HERO_FLAVORS.map((flavor) => (
+                  <FlavorPanel
+                    key={flavor.name}
+                    flavor={flavor}
+                    progress={scrollYProgress}
+                  />
+                ))}
             </div>
           </div>
         </div>
