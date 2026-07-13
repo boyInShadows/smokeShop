@@ -133,8 +133,23 @@ export default function HeroScrollStage() {
   return (
     <>
       {/* LazyMotion lives in SmoothScroll, above the whole app. */}
-      {/* The plate is a CSS background, so next/image can't preload it for us. */}
-      <link rel="preload" as="image" href="/hero/smoke.webp" />
+      {/* The plate is a CSS background, so next/image can't preload it for us —
+          and it is the LCP element, so it must not wait for the CSS to parse.
+          `media` must mirror the --hero-smoke breakpoint in globals.css exactly,
+          or a phone preloads the 215 KB desktop plate and then downloads the
+          mobile one anyway: worse than no preload at all. */}
+      <link
+        rel="preload"
+        as="image"
+        href="/hero/smoke-sm.webp"
+        media="(max-width: 640px)"
+      />
+      <link
+        rel="preload"
+        as="image"
+        href="/hero/smoke.webp"
+        media="(min-width: 641px)"
+      />
 
       <section
         ref={ref}
@@ -150,13 +165,13 @@ export default function HeroScrollStage() {
                 reduce
                   ? {
                       opacity: i === 0 ? 1 : 0,
-                      backgroundImage: `linear-gradient(to top, ${flavor.from}, ${flavor.to}), url(/hero/smoke.webp)`,
+                      backgroundImage: `linear-gradient(to top, ${flavor.from}, ${flavor.to}), var(--hero-smoke)`,
                     }
                   : {
                       opacity: flavorOpacity[i],
                       y: smokeY,
                       scale: smokeScale,
-                      backgroundImage: `linear-gradient(to top, ${flavor.from}, ${flavor.to}), url(/hero/smoke.webp)`,
+                      backgroundImage: `linear-gradient(to top, ${flavor.from}, ${flavor.to}), var(--hero-smoke)`,
                     }
               }
               className="absolute -inset-[8%] bg-cover bg-center [background-blend-mode:multiply] mix-blend-screen will-change-transform"
