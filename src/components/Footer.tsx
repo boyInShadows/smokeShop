@@ -65,7 +65,10 @@ export default function Footer() {
                   <a
                     href={link.href}
                     // The nudge is toward the inline-start (leftward in RTL).
-                    className="inline-block text-sm text-muted transition-all duration-200 hover:text-text rtl:hover:-translate-x-1"
+                    // `py-1` is not decorative: a bare text link is only ~20px
+                    // tall, under the 24px minimum target size (WCAG 2.2 SC
+                    // 2.5.8). The padding grows the hit area, not the text.
+                    className="inline-block py-1 text-sm text-muted transition-all duration-200 hover:text-text rtl:hover:-translate-x-1"
                   >
                     {link.label}
                   </a>

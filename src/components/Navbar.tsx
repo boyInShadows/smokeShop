@@ -43,7 +43,10 @@ export default function Navbar() {
             <li key={link.label}>
               <a
                 href={link.href}
-                className="transition-colors hover:text-text"
+                // `py-1` is not decorative: a bare text link is only ~22px tall,
+                // under the 24px minimum target size (WCAG 2.2 SC 2.5.8). The
+                // padding grows the hit area without moving the text.
+                className="inline-block py-1 transition-colors hover:text-text"
               >
                 {link.label}
               </a>

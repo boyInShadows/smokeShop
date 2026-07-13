@@ -19,7 +19,13 @@ export default function TrustRow() {
                 </span>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold">{item.title}</h3>
-                  <p className="truncate text-xs text-muted">{item.desc}</p>
+                  {/* `truncate` (one line + ellipsis) cut these mid-WORD in the
+                      2-column mobile grid — "تضمین اورجینال بود…". Persian has no
+                      short synonyms to fall back on, so let it wrap and bound it
+                      at two lines instead of amputating the promise. */}
+                  <p className="line-clamp-2 text-xs leading-5 text-muted">
+                    {item.desc}
+                  </p>
                 </div>
               </div>
             </Reveal>

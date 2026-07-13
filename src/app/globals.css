@@ -31,6 +31,19 @@
     overflow-x: clip;
   }
 
+  /* Keyboard focus. There was NO focus style here, which does not mean "browser
+     default" — it means invisible. Chrome derives its auto outline colour from
+     the element, and on this palette it lands on near-black (rgb(16,16,16),
+     rgb(39,37,43)) against a #12101a page. A keyboard user could tab the whole
+     landing page and never see where they were: WCAG 2.4.7 Focus Visible (AA).
+
+     Cyan is the one accent never used for body text, so a cyan ring can only
+     mean "focused". `:focus-visible` (not `:focus`) keeps it off mouse clicks. */
+  :focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+  }
+
   body {
     background-color: var(--color-bg);
     color: var(--color-text);
