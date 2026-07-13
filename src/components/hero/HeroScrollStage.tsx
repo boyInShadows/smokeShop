@@ -109,21 +109,36 @@ export default function HeroScrollStage() {
   const deviceY = useTransform(scrollYProgress, [0, 1], ["0%", "-4%"]);
   const deviceScale = useTransform(scrollYProgress, [0, 1], [1, 1.05]);
 
-  // Bloom reacts to scroll SPEED and decays back to nothing at rest. Effects
-  // that never rest read cheap; effects that fire and decay read premium.
+  // Velocity flare: scroll fast and the PLUME brightens, stop and it settles.
+  // Effects that never rest read cheap; effects that fire and decay read premium.
   // Clamped hard — unclamped velocity is a motion-sickness generator.
+  //
+  // ⚠️ This used to be a `radial-gradient(closest-side, …)` on a full-screen div.
+  // `closest-side` on a full-screen box is *by definition* a circle centred in the
+  // viewport, so at speed a white disc appeared over the middle of the hero. It
+  // read as a lens artifact rather than as smoke, because its shape had nothing to
+  // do with the smoke — a hard geometric circle floating over an organic plume.
+  // The flare is now the PLATE ITSELF, screen-blended: the flare is shaped like the
+  // plume, moves with it, and brightens it. Which is what an exhale actually does.
   const velocity = useVelocity(scrollYProgress);
-  const bloomRaw = useTransform(velocity, (v: number) =>
-    Math.min(Math.abs(v) * 0.4, 0.55)
+  // Capped at 0.24, not higher: the flare is a second copy of the plate, so it
+  // thickens the smoke as well as brightening it. Past ~0.3 the denser plume
+  // starts eating the contrast of the flavour headline sitting on top of it,
+  // exactly when the panel is mid-handover and already semi-transparent.
+  const flareRaw = useTransform(velocity, (v: number) =>
+    Math.min(Math.abs(v) * 0.25, 0.24)
   );
   // Spring here is deliberate and safe: it smooths ONE derived value that drives
   // a GPU property. It is not on scrollYProgress, so nothing else loses its
   // compositor path.
-  const bloom = useSpring(bloomRaw, {
+  const flare = useSpring(flareRaw, {
     stiffness: 120,
     damping: 30,
     mass: 0.3,
   });
+  // Sits a touch wider than the plume it is lifting, so it reads as a bloom
+  // around the smoke rather than a second copy of it sitting exactly on top.
+  const flareScale = useTransform(scrollYProgress, [0, 1], [1.04, 1.13]);
 
   // Same rule as the flavour ranges: anchor the far end, or it climbs back up.
   // The intro copy clears out just before the first flavour panel arrives (its
@@ -153,9 +168,14 @@ export default function HeroScrollStage() {
 
       <section
         ref={ref}
-        className={`relative ${reduce ? "h-screen" : "h-[250vh]"}`}
+        className={`relative ${reduce ? "h-[100svh]" : "h-[250vh]"}`}
       >
-        <div className="sticky top-0 h-screen w-full isolate overflow-hidden bg-[#08070d]">
+        {/* `100svh`, not `100vh`: on mobile `vh` is the LARGE viewport (chrome
+            retracted), so a `100vh` stage is taller than what you can actually see
+            until the address bar hides — which is exactly what pushed the hero's
+            CTAs below the fold. `svh` is the small viewport, so the stage fits from
+            the first frame and does not resize as the browser chrome moves. */}
+        <div className="sticky top-0 h-[100svh] w-full isolate overflow-hidden bg-[#08070d]">
           {/* ── Blend group: the smoke, and only the smoke, takes the colour ── */}
           {HERO_FLAVORS.map((flavor, i) => (
             <m.div
@@ -178,25 +198,36 @@ export default function HeroScrollStage() {
             />
           ))}
 
-          {/* Velocity bloom — scroll fast and the plume flares, stop and it settles. */}
-          <m.div
-            aria-hidden
-            style={reduce ? { opacity: 0 } : { opacity: bloom }}
-            className="pointer-events-none absolute inset-0 z-[6] mix-blend-screen bg-[radial-gradient(closest-side,rgba(255,255,255,0.55),rgba(255,255,255,0.12)_45%,transparent_72%)]"
-          />
+          {/* Velocity flare — the plume itself brightens on fast scroll, then settles.
+              Untinted: the raw greyscale plate, screen-blended, so it lifts whatever
+              colour the smoke currently is instead of washing it toward white. Not
+              rendered at all under reduced motion — one less full-screen blend. */}
+          {!reduce && (
+            <m.div
+              aria-hidden
+              style={{
+                opacity: flare,
+                y: smokeY,
+                scale: flareScale,
+                backgroundImage: "var(--hero-smoke)",
+              }}
+              className="pointer-events-none absolute -inset-[8%] z-[6] bg-cover bg-center mix-blend-screen will-change-transform"
+            />
+          )}
 
           {/* ── Product: above the blend group, no blend mode. Immune. ──
-                 On mobile the device takes the top half and the panels take the
-                 bottom, so the two never sit on top of each other. On desktop
-                 they sit side by side (device inline-end = physical left in RTL). */}
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-[8vh] lg:items-center lg:justify-end lg:pe-[9%] lg:pt-0">
+                 On mobile the device takes the top band and the copy takes the
+                 bottom, so the two never sit on top of each other. The top padding
+                 clears the fixed header. On desktop they sit side by side (device
+                 inline-end = physical left in RTL). */}
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-[calc(var(--header-h)+1vh)] lg:items-center lg:justify-end lg:pe-[9%] lg:pt-0">
             <m.div
               style={
                 reduce
                   ? undefined
                   : { rotate: deviceRotate, y: deviceY, scale: deviceScale }
               }
-              className="relative h-[38vh] w-[38vh] will-change-transform lg:h-[72vh] lg:w-[72vh]"
+              className="relative h-[30vh] w-[30vh] will-change-transform lg:h-[72vh] lg:w-[72vh]"
             >
               <Image
                 src="/hero/vape.png"
@@ -204,7 +235,7 @@ export default function HeroScrollStage() {
                 fill
                 loading="eager"
                 fetchPriority="high"
-                sizes="(min-width: 1024px) 72vh, 46vh"
+                sizes="(min-width: 1024px) 72vh, 36vh"
                 className="object-contain drop-shadow-[0_30px_70px_rgba(0,0,0,0.75)]"
               />
             </m.div>
@@ -215,10 +246,25 @@ export default function HeroScrollStage() {
 
           <Grain />
 
+          {/* Mobile legibility scrim.
+              This replaces a translucent rounded CARD that used to sit behind the
+              copy. The card was sized by HeroCopy — which stays in the layout at
+              `opacity: 0` while the flavour panels are absolutely positioned INSIDE
+              it — so it was permanently 66% of the screen tall no matter what was
+              actually showing: dead blurred space above and below the panel text,
+              and its top edge sliced straight across the device.
+              A bottom-up gradient has no height to get wrong and no edge to cut with:
+              it fades out before it reaches the device, and there is nothing to look
+              empty when the panel is short. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[35] h-[62%] bg-gradient-to-t from-bg via-bg/75 to-transparent lg:hidden"
+          />
+
           {/* ── The copy column. The intro copy hands the stage over to the
                  flavour panels, which occupy the same space in turn. ── */}
           <div className="relative z-40 mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 lg:items-center lg:pb-0">
-            <div className="relative w-full rounded-3xl bg-bg/45 p-4 backdrop-blur-[2px] lg:w-[55%] lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+            <div className="relative w-full lg:w-[55%]">
               <m.div style={reduce ? undefined : { opacity: copyOpacity }}>
                 <HeroCopy />
               </m.div>

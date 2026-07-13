@@ -19,6 +19,70 @@
   --font-sans: "Vazirmatn Variable", ui-sans-serif, system-ui, sans-serif;
 
   --radius-card: 1.25rem;
+
+  /* Ticker + navbar, which are fixed and overlay the hero. Approximate on
+     purpose — it only feeds the hero's top padding, so being a few px out costs
+     nothing, and hard-coding it beats a ResizeObserver for a bar that never
+     changes height. */
+  --header-h: 6.5rem;
+}
+
+/* ── Palettes ────────────────────────────────────────────────────────────────
+   Tailwind v4 compiles `bg-primary` to `background-color: var(--color-primary)`,
+   so re-pointing the token at runtime re-themes every utility on the page — no
+   class swapping, no re-render, no per-component theme prop. `@theme` emits these
+   on `:root`, so `:root[data-theme=…]` (specificity 0,1,1) wins over it (0,1,0).
+
+   ⚠️ ALL FOUR ARE DARK, and that is a constraint, not a preference. The hero's
+   smoke plate is composited with `mix-blend-screen`, under which BLACK IS
+   MATHEMATICALLY TRANSPARENT — that is the whole trick that lets the plate work
+   with no alpha channel and no mask. On a light background `screen` blows out to
+   white and the smoke disappears. A light theme means rebuilding the hero.
+
+   Theme is applied to <html> by an inline script in layout.tsx BEFORE first paint
+   (no flash), and read back through useSyncExternalStore (no hydration mismatch).
+   Keep these in sync with the swatches in src/lib/themes.ts. */
+
+:root[data-theme="ember"] {
+  --color-bg: #14100c;
+  --color-surface: #241a12;
+  --color-surface-2: #2e2118;
+  --color-border: #3d2c1e;
+
+  --color-primary: #ff7a3d; /* ember orange */
+  --color-primary-strong: #e8622a;
+  --color-secondary: #ffc861; /* warm amber */
+
+  --color-text: #fff3e8;
+  --color-muted: #bda289;
+}
+
+:root[data-theme="toxic"] {
+  --color-bg: #08130f;
+  --color-surface: #10241b;
+  --color-surface-2: #162e23;
+  --color-border: #1f3d2e;
+
+  --color-primary: #2bf59a; /* acid mint */
+  --color-primary-strong: #14d182;
+  --color-secondary: #b6e84b; /* lime */
+
+  --color-text: #eafff5;
+  --color-muted: #8bab9c;
+}
+
+:root[data-theme="indigo"] {
+  --color-bg: #0a0e27;
+  --color-surface: #151b3d;
+  --color-surface-2: #1d244f;
+  --color-border: #2a3163;
+
+  --color-primary: #8b5cf6; /* violet */
+  --color-primary-strong: #7c3aed;
+  --color-secondary: #38bdf8; /* sky */
+
+  --color-text: #eef1ff;
+  --color-muted: #9aa3d4;
 }
 
 @layer base {
@@ -47,6 +111,15 @@
     :root {
       --hero-smoke: url("/hero/smoke-sm.webp"); /* 1280px, 57 KB */
     }
+  }
+
+  /* The header is fixed, so an anchor jump (#offers, #categories) would land the
+     target's top edge UNDERNEATH it. `scroll-margin-top` offsets the landing
+     point by the header's height. Applies to the smooth-scrolled and the
+     reduced-motion instant jump alike. */
+  section[id],
+  [id]:target {
+    scroll-margin-top: calc(var(--header-h) + 1rem);
   }
 
   /* Keyboard focus. There was NO focus style here, which does not mean "browser

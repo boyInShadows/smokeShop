@@ -102,6 +102,17 @@ export function CheckIcon(props: IconProps) {
   );
 }
 
+export function PaletteIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3a9 9 0 100 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1a1.5 1.5 0 011.14-2.5H16a5 5 0 005-5c0-4.42-4.03-8-9-8z" />
+      <circle cx="7.5" cy="11.5" r="1.1" />
+      <circle cx="11" cy="7.5" r="1.1" />
+      <circle cx="16" cy="9.5" r="1.1" />
+    </svg>
+  );
+}
+
 export function BoltIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

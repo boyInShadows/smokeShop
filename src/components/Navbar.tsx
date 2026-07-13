@@ -1,23 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { NAV_LINKS } from "@/lib/data";
+import ThemeSwitcher from "./ThemeSwitcher";
 import { CartIcon, MenuIcon, CloseIcon } from "./icons";
 
-export default function Navbar() {
+// `scrolled` is owned by SiteHeader — it drives the ticker's collapse as well as
+// this bar's background, and two independent scroll listeners disagreeing about the
+// same threshold is a bug waiting to happen.
+export default function Navbar({ scrolled }: { scrolled: boolean }) {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   return (
-    <header
-      className={`sticky top-0 z-50 transition-colors duration-300 ${
+    // Not `sticky` any more — the whole header is `fixed` by its wrapper in
+    // page.tsx, so it no longer occupies flow height and the hero can be exactly
+    // one viewport tall. See the note there.
+    <div
+      className={`transition-colors duration-300 ${
         scrolled
           ? "border-b border-border bg-bg/85 backdrop-blur-lg"
           : "border-b border-transparent bg-transparent"
@@ -27,15 +26,19 @@ export default function Navbar() {
         className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6"
         aria-label="ناوبری اصلی"
       >
-        {/* Logo */}
-        <a href="#" className="flex items-center gap-2 font-extrabold">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-bg">
-            <bdi className="text-lg font-black">W</bdi>
-          </span>
-          <span className="text-lg tracking-tight">
-            ویپ<span className="text-primary">اسموک</span>
-          </span>
-        </a>
+        {/* Logo + palette picker */}
+        <div className="flex items-center gap-2">
+          <a href="#" className="flex items-center gap-2 font-extrabold">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-bg">
+              <bdi className="text-lg font-black">W</bdi>
+            </span>
+            <span className="text-lg tracking-tight">
+              ویپ<span className="text-primary">اسموک</span>
+            </span>
+          </a>
+
+          <ThemeSwitcher />
+        </div>
 
         {/* Desktop links */}
         <ul className="hidden items-center gap-7 text-sm text-muted lg:flex">
@@ -94,6 +97,6 @@ export default function Navbar() {
           </ul>
         </div>
       )}
-    </header>
+    </div>
   );
 }
