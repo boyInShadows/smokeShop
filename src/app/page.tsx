@@ -1,6 +1,6 @@
 import AgeGate from "@/components/AgeGate";
 import ComplianceTicker from "@/components/ComplianceTicker";
-import Navbar from "@/components/Navbar";
+import SiteHeader from "@/components/SiteHeader";
 import HeroScrollStage from "@/components/hero/HeroScrollStage";
 import TrustRow from "@/components/TrustRow";
 import CategoryTiles from "@/components/CategoryTiles";
@@ -18,8 +18,12 @@ export default function Home() {
   return (
     <>
       <AgeGate />
-      <ComplianceTicker />
-      <Navbar />
+
+      {/* Fixed, not in flow — see SiteHeader for why the hero depends on that.
+          The ticker is passed in rather than imported so it stays a server
+          component. */}
+      <SiteHeader ticker={<ComplianceTicker />} />
+
       <main className="flex-1">
         <HeroScrollStage />
         <TrustRow />

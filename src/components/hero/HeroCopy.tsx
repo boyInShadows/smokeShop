@@ -41,8 +41,14 @@ export default function HeroCopy() {
         </a>
       </div>
 
-      {/* Mini stats */}
-      <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 text-center lg:mx-0">
+      {/* Mini stats.
+          Hidden below `sm`. On a 390px phone the hero has to fit a device, a
+          headline, a paragraph, two CTAs and this row into one viewport — and this
+          row was what tipped it over: it pushed the copy up into the device and its
+          own bottom edge fell below the fold. It is reassurance, not information,
+          and the TrustRow immediately underneath the hero says the same thing with
+          more room. */}
+      <dl className="mt-10 hidden max-w-md grid-cols-3 gap-4 text-center sm:grid lg:mx-0">
         {[
           { n: 120, s: "+", l: "محصول متنوع" },
           { n: 15, s: "+", l: "برند اورجینال" },

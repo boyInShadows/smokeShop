@@ -168,9 +168,14 @@ export default function HeroScrollStage() {
 
       <section
         ref={ref}
-        className={`relative ${reduce ? "h-screen" : "h-[250vh]"}`}
+        className={`relative ${reduce ? "h-[100svh]" : "h-[250vh]"}`}
       >
-        <div className="sticky top-0 h-screen w-full isolate overflow-hidden bg-[#08070d]">
+        {/* `100svh`, not `100vh`: on mobile `vh` is the LARGE viewport (chrome
+            retracted), so a `100vh` stage is taller than what you can actually see
+            until the address bar hides — which is exactly what pushed the hero's
+            CTAs below the fold. `svh` is the small viewport, so the stage fits from
+            the first frame and does not resize as the browser chrome moves. */}
+        <div className="sticky top-0 h-[100svh] w-full isolate overflow-hidden bg-[#08070d]">
           {/* ── Blend group: the smoke, and only the smoke, takes the colour ── */}
           {HERO_FLAVORS.map((flavor, i) => (
             <m.div
@@ -211,17 +216,18 @@ export default function HeroScrollStage() {
           )}
 
           {/* ── Product: above the blend group, no blend mode. Immune. ──
-                 On mobile the device takes the top half and the panels take the
-                 bottom, so the two never sit on top of each other. On desktop
-                 they sit side by side (device inline-end = physical left in RTL). */}
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-[8vh] lg:items-center lg:justify-end lg:pe-[9%] lg:pt-0">
+                 On mobile the device takes the top band and the copy takes the
+                 bottom, so the two never sit on top of each other. The top padding
+                 clears the fixed header. On desktop they sit side by side (device
+                 inline-end = physical left in RTL). */}
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-[calc(var(--header-h)+1vh)] lg:items-center lg:justify-end lg:pe-[9%] lg:pt-0">
             <m.div
               style={
                 reduce
                   ? undefined
                   : { rotate: deviceRotate, y: deviceY, scale: deviceScale }
               }
-              className="relative h-[38vh] w-[38vh] will-change-transform lg:h-[72vh] lg:w-[72vh]"
+              className="relative h-[30vh] w-[30vh] will-change-transform lg:h-[72vh] lg:w-[72vh]"
             >
               <Image
                 src="/hero/vape.png"
@@ -229,7 +235,7 @@ export default function HeroScrollStage() {
                 fill
                 loading="eager"
                 fetchPriority="high"
-                sizes="(min-width: 1024px) 72vh, 46vh"
+                sizes="(min-width: 1024px) 72vh, 36vh"
                 className="object-contain drop-shadow-[0_30px_70px_rgba(0,0,0,0.75)]"
               />
             </m.div>
@@ -240,10 +246,25 @@ export default function HeroScrollStage() {
 
           <Grain />
 
+          {/* Mobile legibility scrim.
+              This replaces a translucent rounded CARD that used to sit behind the
+              copy. The card was sized by HeroCopy — which stays in the layout at
+              `opacity: 0` while the flavour panels are absolutely positioned INSIDE
+              it — so it was permanently 66% of the screen tall no matter what was
+              actually showing: dead blurred space above and below the panel text,
+              and its top edge sliced straight across the device.
+              A bottom-up gradient has no height to get wrong and no edge to cut with:
+              it fades out before it reaches the device, and there is nothing to look
+              empty when the panel is short. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[35] h-[62%] bg-gradient-to-t from-bg via-bg/75 to-transparent lg:hidden"
+          />
+
           {/* ── The copy column. The intro copy hands the stage over to the
                  flavour panels, which occupy the same space in turn. ── */}
           <div className="relative z-40 mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 lg:items-center lg:pb-0">
-            <div className="relative w-full rounded-3xl bg-bg/45 p-4 backdrop-blur-[2px] lg:w-[55%] lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+            <div className="relative w-full lg:w-[55%]">
               <m.div style={reduce ? undefined : { opacity: copyOpacity }}>
                 <HeroCopy />
               </m.div>

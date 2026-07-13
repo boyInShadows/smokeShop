@@ -65,11 +65,14 @@ export default function SmoothScroll({
       // *scrubbed*, the smoke, the colour grade and the panels all trailed the
       // input by the same half second. That reads as lag, and it is the thing
       // people actually mean when they call a smooth-scroll site "laggy".
-      // 0.25 cuts the trail to ~200ms while still visibly easing (native is a
-      // single 88ms jump). THIS IS THE DIAL for "too laggy" vs "too abrupt":
-      // higher = snappier and closer to native, lower = floatier. Do not go back
-      // to 0.1 without re-reading the numbers above.
-      lenis = new Lenis({ lerp: 0.25, smoothWheel: true });
+      // THIS IS THE DIAL for "too laggy" vs "too abrupt": higher = snappier and
+      // closer to native, lower = floatier and glassier. Measured, one wheel tick:
+      //   0.10 (default)  90% @ 452ms, settles 1186ms  <- the user called this laggy
+      //   0.18 (current)  90% @ ~330ms, settles ~750ms <- smooth but still tracking
+      //   0.25            90% @ 242ms, settles  525ms
+      //   native           90% @  88ms, settles   88ms
+      // Do not go back to 0.1 without re-reading those numbers.
+      lenis = new Lenis({ lerp: 0.18, smoothWheel: true });
       const loop = (time: number) => {
         lenis?.raf(time);
         frame = requestAnimationFrame(loop);
