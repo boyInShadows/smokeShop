@@ -3,18 +3,16 @@
 import { useRef } from "react";
 import Image from "next/image";
 import {
-  LazyMotion,
-  domAnimation,
   m,
   useScroll,
   useSpring,
   useTransform,
   useVelocity,
   useReducedMotion,
-  type MotionValue,
 } from "motion/react";
 import { HERO_FLAVORS } from "@/lib/data";
 import HeroCopy from "./HeroCopy";
+import FlavorPanel from "./FlavorPanel";
 import Grain from "./Grain";
 
 /**
@@ -110,13 +108,13 @@ export default function HeroScrollStage() {
   });
 
   // Same rule as the flavour ranges: anchor the far end, or it climbs back up.
-  const copyOpacity = useTransform(scrollYProgress, [0, 0.25, 1], [1, 0, 0]);
-  // The flavour beats take over the stage as the copy clears out, so the two
-  // never compete for the same corner.
-  const beatsOpacity = useTransform(scrollYProgress, [0, 0.18, 1], [0, 1, 1]);
+  // The intro copy clears out just before the first flavour panel arrives (its
+  // window opens at 0.07), so the two never overlap in the same column.
+  const copyOpacity = useTransform(scrollYProgress, [0, 0.06, 1], [1, 0, 0]);
 
   return (
-    <LazyMotion features={domAnimation}>
+    <>
+      {/* LazyMotion lives in SmoothScroll, above the whole app. */}
       {/* The plate is a CSS background, so next/image can't preload it for us. */}
       <link rel="preload" as="image" href="/hero/smoke.webp" />
 
@@ -151,15 +149,18 @@ export default function HeroScrollStage() {
             className="pointer-events-none absolute inset-0 z-[6] mix-blend-screen bg-[radial-gradient(closest-side,rgba(255,255,255,0.55),rgba(255,255,255,0.12)_45%,transparent_72%)]"
           />
 
-          {/* ── Product: above the blend group, no blend mode. Immune. ── */}
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center lg:justify-end lg:pe-[9%]">
+          {/* ── Product: above the blend group, no blend mode. Immune. ──
+                 On mobile the device takes the top half and the panels take the
+                 bottom, so the two never sit on top of each other. On desktop
+                 they sit side by side (device inline-end = physical left in RTL). */}
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-[8vh] lg:items-center lg:justify-end lg:pe-[9%] lg:pt-0">
             <m.div
               style={
                 reduce
                   ? undefined
                   : { rotate: deviceRotate, y: deviceY, scale: deviceScale }
               }
-              className="relative h-[46vh] w-[46vh] will-change-transform lg:h-[72vh] lg:w-[72vh]"
+              className="relative h-[38vh] w-[38vh] will-change-transform lg:h-[72vh] lg:w-[72vh]"
             >
               <Image
                 src="/hero/vape.png"
@@ -178,64 +179,28 @@ export default function HeroScrollStage() {
 
           <Grain />
 
-          {/* Copy + the flavour beat */}
-          <div className="relative z-40 mx-auto flex h-full max-w-7xl items-center px-4 sm:px-6">
-            <m.div
-              style={reduce ? undefined : { opacity: copyOpacity }}
-              className="w-full rounded-3xl bg-bg/40 p-4 backdrop-blur-[2px] lg:w-[55%] lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
-            >
-              <HeroCopy />
-            </m.div>
+          {/* ── The copy column. The intro copy hands the stage over to the
+                 flavour panels, which occupy the same space in turn. ── */}
+          <div className="relative z-40 mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 lg:items-center lg:pb-0">
+            <div className="relative w-full rounded-3xl bg-bg/45 p-4 backdrop-blur-[2px] lg:w-[55%] lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+              <m.div style={reduce ? undefined : { opacity: copyOpacity }}>
+                <HeroCopy />
+              </m.div>
 
-            <FlavorBeats
-              opacities={flavorOpacity}
-              groupOpacity={beatsOpacity}
-              reduce={Boolean(reduce)}
-            />
+              {HERO_FLAVORS.map((flavor, i) => (
+                <FlavorPanel
+                  key={flavor.name}
+                  flavor={flavor}
+                  progress={scrollYProgress}
+                  reduce={Boolean(reduce)}
+                  active={i === 0}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
-    </LazyMotion>
+    </>
   );
 }
 
-/**
- * The flavour name, pinned low on the stage, cross-fading in step with the smoke.
- * Sits on the device side (inline-end = physical left in RTL) so it balances the
- * copy column rather than stacking under it.
- */
-function FlavorBeats({
-  opacities,
-  groupOpacity,
-  reduce,
-}: {
-  opacities: MotionValue<number>[];
-  groupOpacity: MotionValue<number>;
-  reduce: boolean;
-}) {
-  return (
-    <m.div
-      style={reduce ? { opacity: 0 } : { opacity: groupOpacity }}
-      className="pointer-events-none absolute inset-x-4 bottom-10 sm:inset-x-6 lg:bottom-16"
-    >
-      <div className="relative h-24">
-        {HERO_FLAVORS.map((flavor, i) => (
-          <m.a
-            key={flavor.name}
-            href={flavor.href}
-            style={reduce ? undefined : { opacity: opacities[i] }}
-            className="pointer-events-auto absolute inset-0 flex flex-col items-center text-center lg:items-end lg:text-end"
-          >
-            <span className="text-xs font-bold tracking-wide text-muted">
-              طعم
-            </span>
-            <span className="mt-1 text-3xl font-black leading-tight text-text sm:text-4xl lg:text-5xl">
-              {flavor.name}
-            </span>
-            <span className="mt-1 text-sm text-muted">{flavor.note}</span>
-          </m.a>
-        ))}
-      </div>
-    </m.div>
-  );
-}

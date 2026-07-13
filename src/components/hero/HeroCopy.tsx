@@ -27,17 +27,17 @@ export default function HeroCopy() {
 
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
         <a
-          href="#bestsellers"
-          className="glow-primary w-full rounded-xl bg-primary px-7 py-3.5 text-center font-bold text-bg transition hover:bg-primary-strong sm:w-auto"
+          href="#offers"
+          className="glow-primary w-full rounded-xl bg-primary px-7 py-3.5 text-center font-bold text-bg transition-all duration-200 hover:scale-[1.03] hover:bg-primary-strong active:scale-95 sm:w-auto"
         >
           مشاهدهٔ محصولات
         </a>
         <a
-          href="#brands"
-          className="flex w-full items-center justify-center gap-1 rounded-xl border border-border bg-surface/50 px-7 py-3.5 text-center font-semibold text-text backdrop-blur-sm transition hover:border-secondary/60 hover:text-secondary sm:w-auto"
+          href="#categories"
+          className="group flex w-full items-center justify-center gap-1 rounded-xl border border-border bg-surface/50 px-7 py-3.5 text-center font-semibold text-text backdrop-blur-sm transition-all duration-200 hover:border-secondary/60 hover:text-secondary active:scale-95 sm:w-auto"
         >
-          برندها
-          <ChevronIcon className="h-4 w-4 rtl:-scale-x-100" />
+          دسته‌بندی‌ها
+          <ChevronIcon className="h-4 w-4 transition-transform duration-300 rtl:-scale-x-100 rtl:group-hover:-translate-x-1" />
         </a>
       </div>
 

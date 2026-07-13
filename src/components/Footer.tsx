@@ -2,20 +2,24 @@ import { FOOTER_LINKS, NICOTINE_WARNING } from "@/lib/data";
 import { toFaDigits } from "@/lib/format";
 import { InstagramIcon, TelegramIcon } from "./icons";
 import NewsletterForm from "./NewsletterForm";
+import Reveal from "./motion/Reveal";
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-border bg-surface/40">
+    <footer className="mt-auto overflow-x-clip border-t border-border bg-surface/40">
       {/* Newsletter */}
       <div className="border-b border-border">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-5 px-4 py-10 sm:px-6 lg:flex-row lg:justify-between">
-          <div className="text-center lg:text-start">
+          <Reveal dir="right" className="text-center lg:text-start">
             <h3 className="text-lg font-black">از تخفیف‌ها باخبر شوید</h3>
             <p className="mt-1 text-sm text-muted">
-              ایمیل خود را وارد کنید تا جدیدترین محصولات و پیشنهادها را دریافت کنید.
+              ایمیل خود را وارد کنید تا جدیدترین محصولات و پیشنهادها را دریافت
+              کنید.
             </p>
-          </div>
-          <NewsletterForm />
+          </Reveal>
+          <Reveal dir="left" delay={0.1}>
+            <NewsletterForm />
+          </Reveal>
         </div>
       </div>
 
@@ -38,36 +42,37 @@ export default function Footer() {
             <a
               href="#"
               aria-label="اینستاگرام"
-              className="grid h-10 w-10 place-items-center rounded-xl border border-border text-muted transition hover:border-primary hover:text-primary"
+              className="grid h-10 w-10 place-items-center rounded-xl border border-border text-muted transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:text-primary active:scale-90"
             >
               <InstagramIcon className="h-5 w-5" />
             </a>
             <a
               href="#"
               aria-label="تلگرام"
-              className="grid h-10 w-10 place-items-center rounded-xl border border-border text-muted transition hover:border-secondary hover:text-secondary"
+              className="grid h-10 w-10 place-items-center rounded-xl border border-border text-muted transition-all duration-200 hover:-translate-y-0.5 hover:border-secondary hover:text-secondary active:scale-90"
             >
               <TelegramIcon className="h-5 w-5" />
             </a>
           </div>
         </div>
 
-        {FOOTER_LINKS.map((col) => (
-          <div key={col.title}>
+        {FOOTER_LINKS.map((col, i) => (
+          <Reveal key={col.title} dir="up" delay={0.08 * i}>
             <h4 className="text-sm font-bold">{col.title}</h4>
             <ul className="mt-4 space-y-2.5">
               {col.links.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-muted transition hover:text-text"
+                    // The nudge is toward the inline-start (leftward in RTL).
+                    className="inline-block text-sm text-muted transition-all duration-200 hover:text-text rtl:hover:-translate-x-1"
                   >
                     {link.label}
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
+          </Reveal>
         ))}
       </div>
 
