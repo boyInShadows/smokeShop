@@ -10,6 +10,7 @@ import {
   useVelocity,
 } from "motion/react";
 import { useSafeReducedMotion } from "@/lib/useSafeReducedMotion";
+import { useIsDesktop } from "@/lib/useIsDesktop";
 import { HERO_FLAVORS } from "@/lib/data";
 import HeroCopy from "./HeroCopy";
 import FlavorPanel from "./FlavorPanel";
@@ -65,10 +66,29 @@ import Grain from "./Grain";
  * `useSafeReducedMotion` (not Motion's raw hook) because these branches feed
  * `style`/`className`, which are server-rendered: the raw value differs between
  * server and first client render and would throw a hydration mismatch.
+ *
+ * ── Mobile gets the same static frame, for a different reason ─────────────────
+ * That static frame is also exactly what phones need. On a phone Lenis is already
+ * off (native scroll), but the scrub itself is the cost: every native-scroll frame
+ * the mobile GPU has to read back and re-blend a stack of full-viewport layers
+ * (three `mix-blend-screen` smoke plates, a fourth screen-blended velocity flare,
+ * an `feTurbulence` grain, a vignette, backdrop-blurred chips), none of which take
+ * the compositor fast-path. That drops frames and reads as "the scroll is laggy /
+ * won't move". So below 1024px we resolve the hero to the same composed static
+ * frame: nothing scrubs, the isolated blend group paints ONCE and just scrolls as
+ * static content. Desktop keeps the full animation. `useIsDesktop` is the same
+ * `useSyncExternalStore` shape as `useSafeReducedMotion`, for the same
+ * hydration-safety reason — and rendering the static branch on the server keeps the
+ * heavy Motion tree out of mobile hydration entirely.
  */
 export default function HeroScrollStage() {
   const ref = useRef<HTMLElement>(null);
   const reduce = useSafeReducedMotion();
+  const isDesktop = useIsDesktop();
+
+  // One flag drives every static/animated branch below. Reduced motion and a
+  // sub-desktop viewport both resolve to the exact same composed static frame.
+  const staticHero = reduce || !isDesktop;
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -168,7 +188,7 @@ export default function HeroScrollStage() {
 
       <section
         ref={ref}
-        className={`relative ${reduce ? "h-[100svh]" : "h-[250vh]"}`}
+        className={`relative ${staticHero ? "h-[100svh]" : "h-[250vh]"}`}
       >
         {/* `100svh`, not `100vh`: on mobile `vh` is the LARGE viewport (chrome
             retracted), so a `100vh` stage is taller than what you can actually see
@@ -182,7 +202,7 @@ export default function HeroScrollStage() {
               key={flavor.name}
               aria-hidden
               style={
-                reduce
+                staticHero
                   ? {
                       opacity: i === 0 ? 1 : 0,
                       backgroundImage: `linear-gradient(to top, ${flavor.from}, ${flavor.to}), var(--hero-smoke)`,
@@ -194,15 +214,21 @@ export default function HeroScrollStage() {
                       backgroundImage: `linear-gradient(to top, ${flavor.from}, ${flavor.to}), var(--hero-smoke)`,
                     }
               }
-              className="absolute -inset-[8%] bg-cover bg-center [background-blend-mode:multiply] mix-blend-screen will-change-transform"
+              // `will-change: transform` only on the animated path. On the static
+              // frame nothing transforms, so promoting these full-screen layers to
+              // their own compositor layers just burns GPU memory on the phone.
+              className={`absolute -inset-[8%] bg-cover bg-center [background-blend-mode:multiply] mix-blend-screen ${
+                staticHero ? "" : "will-change-transform"
+              }`}
             />
           ))}
 
           {/* Velocity flare — the plume itself brightens on fast scroll, then settles.
               Untinted: the raw greyscale plate, screen-blended, so it lifts whatever
               colour the smoke currently is instead of washing it toward white. Not
-              rendered at all under reduced motion — one less full-screen blend. */}
-          {!reduce && (
+              rendered on the static frame (reduced motion or mobile) — one less
+              full-screen blend, and the biggest per-frame win on the phone. */}
+          {!staticHero && (
             <m.div
               aria-hidden
               style={{
@@ -223,11 +249,13 @@ export default function HeroScrollStage() {
           <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-[calc(var(--header-h)+1vh)] lg:items-center lg:justify-end lg:pe-[9%] lg:pt-0">
             <m.div
               style={
-                reduce
+                staticHero
                   ? undefined
                   : { rotate: deviceRotate, y: deviceY, scale: deviceScale }
               }
-              className="relative h-[30vh] w-[30vh] will-change-transform lg:h-[72vh] lg:w-[72vh]"
+              className={`relative h-[30vh] w-[30vh] lg:h-[72vh] lg:w-[72vh] ${
+                staticHero ? "" : "will-change-transform"
+              }`}
             >
               <Image
                 src="/hero/vape.png"
@@ -265,15 +293,16 @@ export default function HeroScrollStage() {
                  flavour panels, which occupy the same space in turn. ── */}
           <div className="relative z-40 mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 lg:items-center lg:pb-0">
             <div className="relative w-full lg:w-[55%]">
-              <m.div style={reduce ? undefined : { opacity: copyOpacity }}>
+              <m.div style={staticHero ? undefined : { opacity: copyOpacity }}>
                 <HeroCopy />
               </m.div>
 
               {/* The panels only exist when there is a scroll to scrub them.
-                  Under reduced motion the copy keeps the stage to itself — see
-                  the header note. Not mounting them is safe: their hooks live
-                  inside FlavorPanel, so nothing here changes hook order. */}
-              {!reduce &&
+                  On the static frame (reduced motion or mobile) the copy keeps the
+                  stage to itself — see the header note. Not mounting them is safe:
+                  their hooks live inside FlavorPanel, so nothing here changes hook
+                  order in THIS component. */}
+              {!staticHero &&
                 HERO_FLAVORS.map((flavor) => (
                   <FlavorPanel
                     key={flavor.name}
