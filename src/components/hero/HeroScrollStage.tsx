@@ -2,18 +2,13 @@
 
 import { useRef } from "react";
 import Image from "next/image";
-import {
-  m,
-  useScroll,
-  useSpring,
-  useTransform,
-  useVelocity,
-} from "motion/react";
+import { m, useScroll, useTransform } from "motion/react";
 import { useSafeReducedMotion } from "@/lib/useSafeReducedMotion";
 import { useIsDesktop } from "@/lib/useIsDesktop";
 import { HERO_FLAVORS } from "@/lib/data";
 import HeroCopy from "./HeroCopy";
 import FlavorPanel from "./FlavorPanel";
+import HeroFlare from "./HeroFlare";
 import Grain from "./Grain";
 
 /**
@@ -67,28 +62,32 @@ import Grain from "./Grain";
  * `style`/`className`, which are server-rendered: the raw value differs between
  * server and first client render and would throw a hydration mismatch.
  *
- * ── Mobile gets the same static frame, for a different reason ─────────────────
- * That static frame is also exactly what phones need. On a phone Lenis is already
- * off (native scroll), but the scrub itself is the cost: every native-scroll frame
- * the mobile GPU has to read back and re-blend a stack of full-viewport layers
- * (three `mix-blend-screen` smoke plates, a fourth screen-blended velocity flare,
- * an `feTurbulence` grain, a vignette, backdrop-blurred chips), none of which take
- * the compositor fast-path. That drops frames and reads as "the scroll is laggy /
- * won't move". So below 1024px we resolve the hero to the same composed static
- * frame: nothing scrubs, the isolated blend group paints ONCE and just scrolls as
- * static content. Desktop keeps the full animation. `useIsDesktop` is the same
- * `useSyncExternalStore` shape as `useSafeReducedMotion`, for the same
- * hydration-safety reason — and rendering the static branch on the server keeps the
- * heavy Motion tree out of mobile hydration entirely.
+ * ── Mobile keeps the animation, but LITE — the point of the site is the motion ─
+ * Phones DO scrub, recolour, hold the device and hand over the panels — the whole
+ * exhale. What a mobile GPU cannot afford is the *compositing garnish* stacked on
+ * top of it, and that garnish is what made the scroll lag: a fourth full-viewport
+ * `mix-blend-screen` velocity-flare layer (plus a permanent spring rAF), an
+ * `feTurbulence` grain (the single most expensive paint here), `will-change` layer
+ * promotions holding a full-screen GPU texture each, and `backdrop-blur` chips that
+ * re-sample the backdrop every frame. None of those carry the story, so below
+ * 1024px they are simply not rendered — the signature smoke-recolour animation
+ * stays, the per-frame blend cost roughly halves.
+ *
+ * `heavy = isDesktop && !reduce` gates that garnish to desktop. `reduce` alone
+ * still resolves to the fully static composed frame (its own branch below).
+ * `useIsDesktop` is the same `useSyncExternalStore` shape as `useSafeReducedMotion`
+ * — hydration-safe, `false` on the server so nothing mismatches.
  */
 export default function HeroScrollStage() {
   const ref = useRef<HTMLElement>(null);
   const reduce = useSafeReducedMotion();
   const isDesktop = useIsDesktop();
 
-  // One flag drives every static/animated branch below. Reduced motion and a
-  // sub-desktop viewport both resolve to the exact same composed static frame.
-  const staticHero = reduce || !isDesktop;
+  // Two independent switches:
+  //   reduce  -> the fully static composed frame (no scrub at all).
+  //   heavy   -> the desktop-only compositing garnish (flare, grain, will-change,
+  //              backdrop-blur). Phones animate WITHOUT it — that is the whole fix.
+  const heavy = isDesktop && !reduce;
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -129,36 +128,9 @@ export default function HeroScrollStage() {
   const deviceY = useTransform(scrollYProgress, [0, 1], ["0%", "-4%"]);
   const deviceScale = useTransform(scrollYProgress, [0, 1], [1, 1.05]);
 
-  // Velocity flare: scroll fast and the PLUME brightens, stop and it settles.
-  // Effects that never rest read cheap; effects that fire and decay read premium.
-  // Clamped hard — unclamped velocity is a motion-sickness generator.
-  //
-  // ⚠️ This used to be a `radial-gradient(closest-side, …)` on a full-screen div.
-  // `closest-side` on a full-screen box is *by definition* a circle centred in the
-  // viewport, so at speed a white disc appeared over the middle of the hero. It
-  // read as a lens artifact rather than as smoke, because its shape had nothing to
-  // do with the smoke — a hard geometric circle floating over an organic plume.
-  // The flare is now the PLATE ITSELF, screen-blended: the flare is shaped like the
-  // plume, moves with it, and brightens it. Which is what an exhale actually does.
-  const velocity = useVelocity(scrollYProgress);
-  // Capped at 0.24, not higher: the flare is a second copy of the plate, so it
-  // thickens the smoke as well as brightening it. Past ~0.3 the denser plume
-  // starts eating the contrast of the flavour headline sitting on top of it,
-  // exactly when the panel is mid-handover and already semi-transparent.
-  const flareRaw = useTransform(velocity, (v: number) =>
-    Math.min(Math.abs(v) * 0.25, 0.24)
-  );
-  // Spring here is deliberate and safe: it smooths ONE derived value that drives
-  // a GPU property. It is not on scrollYProgress, so nothing else loses its
-  // compositor path.
-  const flare = useSpring(flareRaw, {
-    stiffness: 120,
-    damping: 30,
-    mass: 0.3,
-  });
-  // Sits a touch wider than the plume it is lifting, so it reads as a bloom
-  // around the smoke rather than a second copy of it sitting exactly on top.
-  const flareScale = useTransform(scrollYProgress, [0, 1], [1.04, 1.13]);
+  // The velocity flare (a 4th screen-blend layer + a spring rAF) now lives in
+  // `HeroFlare`, mounted desktop-only. Keeping its hooks out here is the point:
+  // on mobile the spring rAF never runs.
 
   // Same rule as the flavour ranges: anchor the far end, or it climbs back up.
   // The intro copy clears out just before the first flavour panel arrives (its
@@ -188,7 +160,7 @@ export default function HeroScrollStage() {
 
       <section
         ref={ref}
-        className={`relative ${staticHero ? "h-[100svh]" : "h-[250vh]"}`}
+        className={`relative ${reduce ? "h-[100svh]" : "h-[250vh]"}`}
       >
         {/* `100svh`, not `100vh`: on mobile `vh` is the LARGE viewport (chrome
             retracted), so a `100vh` stage is taller than what you can actually see
@@ -202,7 +174,7 @@ export default function HeroScrollStage() {
               key={flavor.name}
               aria-hidden
               style={
-                staticHero
+                reduce
                   ? {
                       opacity: i === 0 ? 1 : 0,
                       backgroundImage: `linear-gradient(to top, ${flavor.from}, ${flavor.to}), var(--hero-smoke)`,
@@ -214,32 +186,21 @@ export default function HeroScrollStage() {
                       backgroundImage: `linear-gradient(to top, ${flavor.from}, ${flavor.to}), var(--hero-smoke)`,
                     }
               }
-              // `will-change: transform` only on the animated path. On the static
-              // frame nothing transforms, so promoting these full-screen layers to
-              // their own compositor layers just burns GPU memory on the phone.
+              // `will-change` only on desktop. Phones DO animate these layers, but a
+              // `mix-blend` element is already promoted to its own compositor layer
+              // (blending requires it), so `will-change` adds nothing there except a
+              // permanently-held full-screen GPU texture per layer — pure memory
+              // pressure on a phone. Let mobile composite the transform without it.
               className={`absolute -inset-[8%] bg-cover bg-center [background-blend-mode:multiply] mix-blend-screen ${
-                staticHero ? "" : "will-change-transform"
+                heavy ? "will-change-transform" : ""
               }`}
             />
           ))}
 
-          {/* Velocity flare — the plume itself brightens on fast scroll, then settles.
-              Untinted: the raw greyscale plate, screen-blended, so it lifts whatever
-              colour the smoke currently is instead of washing it toward white. Not
-              rendered on the static frame (reduced motion or mobile) — one less
-              full-screen blend, and the biggest per-frame win on the phone. */}
-          {!staticHero && (
-            <m.div
-              aria-hidden
-              style={{
-                opacity: flare,
-                y: smokeY,
-                scale: flareScale,
-                backgroundImage: "var(--hero-smoke)",
-              }}
-              className="pointer-events-none absolute -inset-[8%] z-[6] bg-cover bg-center mix-blend-screen will-change-transform"
-            />
-          )}
+          {/* Velocity flare — desktop only. It is a 4th full-screen `mix-blend-screen`
+              layer plus a spring rAF, the single biggest per-frame win to drop on a
+              phone. Its hooks live inside HeroFlare, so on mobile they never run. */}
+          {heavy && <HeroFlare progress={scrollYProgress} smokeY={smokeY} />}
 
           {/* ── Product: above the blend group, no blend mode. Immune. ──
                  On mobile the device takes the top band and the copy takes the
@@ -249,12 +210,12 @@ export default function HeroScrollStage() {
           <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-[calc(var(--header-h)+1vh)] lg:items-center lg:justify-end lg:pe-[9%] lg:pt-0">
             <m.div
               style={
-                staticHero
+                reduce
                   ? undefined
                   : { rotate: deviceRotate, y: deviceY, scale: deviceScale }
               }
               className={`relative h-[30vh] w-[30vh] lg:h-[72vh] lg:w-[72vh] ${
-                staticHero ? "" : "will-change-transform"
+                heavy ? "will-change-transform" : ""
               }`}
             >
               <Image
@@ -293,16 +254,16 @@ export default function HeroScrollStage() {
                  flavour panels, which occupy the same space in turn. ── */}
           <div className="relative z-40 mx-auto flex h-full max-w-7xl items-end px-4 pb-10 sm:px-6 lg:items-center lg:pb-0">
             <div className="relative w-full lg:w-[55%]">
-              <m.div style={staticHero ? undefined : { opacity: copyOpacity }}>
+              <m.div style={reduce ? undefined : { opacity: copyOpacity }}>
                 <HeroCopy />
               </m.div>
 
-              {/* The panels only exist when there is a scroll to scrub them.
-                  On the static frame (reduced motion or mobile) the copy keeps the
-                  stage to itself — see the header note. Not mounting them is safe:
-                  their hooks live inside FlavorPanel, so nothing here changes hook
-                  order in THIS component. */}
-              {!staticHero &&
+              {/* The panels only exist when there is a scroll to scrub them — so on
+                  every animated path (mobile included), and NOT under reduced motion,
+                  where with nothing to scrub all three would sit at full opacity on
+                  top of the intro copy. Their hooks live inside FlavorPanel, so
+                  nothing here changes hook order in THIS component. */}
+              {!reduce &&
                 HERO_FLAVORS.map((flavor) => (
                   <FlavorPanel
                     key={flavor.name}
