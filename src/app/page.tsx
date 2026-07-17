@@ -1,7 +1,7 @@
 import AgeGate from "@/components/AgeGate";
 import ComplianceTicker from "@/components/ComplianceTicker";
 import SiteHeader from "@/components/SiteHeader";
-import HeroScrollStage from "@/components/hero/HeroScrollStage";
+import HeroSection from "@/components/hero/HeroSection";
 import TrustRow from "@/components/TrustRow";
 import CategoryTiles from "@/components/CategoryTiles";
 import OffersRail from "@/components/OffersRail";
@@ -25,7 +25,7 @@ export default function Home() {
       <SiteHeader ticker={<ComplianceTicker />} />
 
       <main className="flex-1">
-        <HeroScrollStage />
+        <HeroSection />
         <TrustRow />
         <CategoryTiles />
         <OffersRail />

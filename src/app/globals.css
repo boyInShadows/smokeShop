@@ -122,6 +122,27 @@
     scroll-margin-top: calc(var(--header-h) + 1rem);
   }
 
+  /* ── Mobile hero snap-stepper ────────────────────────────────────────────────
+     The mobile hero (`HeroStepStage`) is a stack of 100svh "beats" that snap one
+     per swipe, so the smoke recolour + panel play as a bounded 0.75s transition
+     and then rest — instead of scrubbing (and re-compositing the blend stack)
+     every frame, which is what lags a phone.
+
+     `proximity`, NOT `mandatory`: the sections below the hero carry no snap-align,
+     so proximity lets them scroll freely and never traps the user at the hero
+     boundary. `scroll-snap-stop: always` still enforces one-beat-per-swipe (no
+     skipping). Scoped below 1024px — desktop scrubs and is never a snap container;
+     Lenis is desktop-only so there is no conflict. */
+  @media (max-width: 1023px) {
+    html {
+      scroll-snap-type: y proximity;
+    }
+  }
+  .hero-beat-anchor {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
   /* Keyboard focus. There was NO focus style here, which does not mean "browser
      default" — it means invisible. Chrome derives its auto outline colour from
      the element, and on this palette it lands on near-black (rgb(16,16,16),

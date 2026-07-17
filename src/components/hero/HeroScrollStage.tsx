@@ -4,7 +4,6 @@ import { useRef } from "react";
 import Image from "next/image";
 import { m, useScroll, useTransform } from "motion/react";
 import { useSafeReducedMotion } from "@/lib/useSafeReducedMotion";
-import { useIsDesktop } from "@/lib/useIsDesktop";
 import { HERO_FLAVORS } from "@/lib/data";
 import HeroCopy from "./HeroCopy";
 import FlavorPanel from "./FlavorPanel";
@@ -62,32 +61,20 @@ import Grain from "./Grain";
  * `style`/`className`, which are server-rendered: the raw value differs between
  * server and first client render and would throw a hydration mismatch.
  *
- * ── Mobile keeps the animation, but LITE — the point of the site is the motion ─
- * Phones DO scrub, recolour, hold the device and hand over the panels — the whole
- * exhale. What a mobile GPU cannot afford is the *compositing garnish* stacked on
- * top of it, and that garnish is what made the scroll lag: a fourth full-viewport
- * `mix-blend-screen` velocity-flare layer (plus a permanent spring rAF), an
- * `feTurbulence` grain (the single most expensive paint here), `will-change` layer
- * promotions holding a full-screen GPU texture each, and `backdrop-blur` chips that
- * re-sample the backdrop every frame. None of those carry the story, so below
- * 1024px they are simply not rendered — the signature smoke-recolour animation
- * stays, the per-frame blend cost roughly halves.
- *
- * `heavy = isDesktop && !reduce` gates that garnish to desktop. `reduce` alone
- * still resolves to the fully static composed frame (its own branch below).
- * `useIsDesktop` is the same `useSyncExternalStore` shape as `useSafeReducedMotion`
- * — hydration-safe, `false` on the server so nothing mismatches.
+ * ── This is now the DESKTOP (and reduced-motion) hero only ───────────────────
+ * Mobile-with-motion is handled by `HeroStepStage` (a snap-stepper — no per-frame
+ * scrub), selected in `HeroSection`. So this component only ever runs on desktop
+ * or under reduced motion, and `heavy` (the full compositing garnish — flare,
+ * grain, `will-change`, `backdrop-blur`) is simply `!reduce`: on desktop it's on,
+ * under reduced motion the whole thing resolves to the static composed frame.
  */
 export default function HeroScrollStage() {
   const ref = useRef<HTMLElement>(null);
   const reduce = useSafeReducedMotion();
-  const isDesktop = useIsDesktop();
 
-  // Two independent switches:
-  //   reduce  -> the fully static composed frame (no scrub at all).
-  //   heavy   -> the desktop-only compositing garnish (flare, grain, will-change,
-  //              backdrop-blur). Phones animate WITHOUT it — that is the whole fix.
-  const heavy = isDesktop && !reduce;
+  // reduce -> the fully static composed frame (no scrub at all).
+  // heavy  -> the full desktop garnish (flare, grain, will-change, backdrop-blur).
+  const heavy = !reduce;
 
   const { scrollYProgress } = useScroll({
     target: ref,
