@@ -6,7 +6,7 @@ import { BoltIcon, ChevronIcon } from "../icons";
 export default function HeroCopy() {
   return (
     <div className="text-center lg:text-start">
-      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-4 py-1.5 text-xs text-secondary backdrop-blur-sm">
+      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-4 py-1.5 text-xs text-secondary lg:backdrop-blur-sm">
         <BoltIcon className="h-3.5 w-3.5" />
         جدیدترین برندهای اورجینال ۲۰۲۵
       </span>
@@ -34,7 +34,7 @@ export default function HeroCopy() {
         </a>
         <a
           href="#categories"
-          className="group flex w-full items-center justify-center gap-1 rounded-xl border border-border bg-surface/50 px-7 py-3.5 text-center font-semibold text-text backdrop-blur-sm transition-all duration-200 hover:border-secondary/60 hover:text-secondary active:scale-95 sm:w-auto"
+          className="group flex w-full items-center justify-center gap-1 rounded-xl border border-border bg-surface/50 px-7 py-3.5 text-center font-semibold text-text lg:backdrop-blur-sm transition-all duration-200 hover:border-secondary/60 hover:text-secondary active:scale-95 sm:w-auto"
         >
           دسته‌بندی‌ها
           <ChevronIcon className="h-4 w-4 transition-transform duration-300 rtl:-scale-x-100 rtl:group-hover:-translate-x-1" />
@@ -56,7 +56,7 @@ export default function HeroCopy() {
         ].map((stat) => (
           <div
             key={stat.l}
-            className="rounded-2xl border border-border bg-surface/40 py-3 backdrop-blur-sm"
+            className="rounded-2xl border border-border bg-surface/40 py-3 lg:backdrop-blur-sm"
           >
             <dt className="text-2xl font-black text-text">
               {toFaDigits(stat.n)}

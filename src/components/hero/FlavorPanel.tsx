@@ -104,13 +104,13 @@ export default function FlavorPanel({
           style={specs}
           className="mt-5 flex flex-wrap gap-2"
         >
-          <li className="rounded-full border border-border bg-surface/60 px-3 py-1.5 text-xs font-semibold text-text backdrop-blur-sm">
+          <li className="rounded-full border border-border bg-surface/60 px-3 py-1.5 text-xs font-semibold text-text lg:backdrop-blur-sm">
             <bdi>{flavor.device}</bdi>
           </li>
           {flavor.specs.map((spec) => (
             <li
               key={spec}
-              className="rounded-full border border-border bg-surface/40 px-3 py-1.5 text-xs text-muted backdrop-blur-sm"
+              className="rounded-full border border-border bg-surface/40 px-3 py-1.5 text-xs text-muted lg:backdrop-blur-sm"
             >
               {spec}
             </li>
